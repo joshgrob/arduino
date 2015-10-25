@@ -12,6 +12,7 @@
 
 #define SerialDebug true
 #define HAPTIC_ACTIVE 0
+#define HAPTIC_UPDATE_RATE 200
 
 Adafruit_DRV2605 drv;
 struct MotorGrid {
@@ -24,12 +25,12 @@ struct MotorGrid {
 };
 struct MotorGrid motorGrid; 
 
-uint32_t count = 0, sumCount = 0; // used to control display output rate
+uint32_t count = 0, sumCount = 0, count_haptic = 0; // used to control display output rate
 float deltat = 0.0f, sum = 0.0f;        // integration interval for both filter schemes
 uint32_t lastUpdate = 0; // used to calculate integration interval
 uint32_t Now = 0;        // used to calculate integration interval
 float y, p, r;
-uint32_t delt_t = 0;
+uint32_t delt_t = 0, delt_t_haptic = 0;
 
 void setup() {
     // Setup for Master mode, pins 18/19, external pullups, 400kHz
@@ -61,7 +62,7 @@ void setup() {
    
     //loop through each haptic channel and initialize
     if (HAPTIC_ACTIVE) {
-        for (int i = 1; i < 6; i++) {
+        for (int i = 0; i < 8; i++) {
             selectI2CChannels(i);
             drv.begin();
             drv.selectLibrary(1);
@@ -129,10 +130,12 @@ void loop() {
     y = getYaw();
     p = getPitch();
     r = getRoll();
-   
-    if (HAPTIC_ACTIVE) {
+
+    delt_t_haptic = millis() - count_haptic;
+    if (HAPTIC_ACTIVE & (delt_t_haptic > HAPTIC_UPDATE_RATE)) {
         translateYPR2Waveforms(y, p, r);
         adjustMotors();
+        count_haptic = millis();
     }
     
     delt_t = millis() - count;
@@ -180,7 +183,7 @@ Function to access the correct haptic motor on the wire, and set it's waveform
 * up motor = channel 2
 * down motor = channel 3
 * front motor = channel 4
-* back motor = channel 5
+* back motor = channel 7
 *
 * FYI MPU is on channel 6
 */
@@ -206,7 +209,7 @@ void adjustMotors() {
         playWaveform(motorGrid.frontMotor);
     }
     if (motorGrid.backMotor != 0.0) {
-        selectI2CChannels(5);
+        selectI2CChannels(7);
         playWaveform(motorGrid.backMotor);
     }
 }
@@ -217,18 +220,19 @@ void playWaveform(uint8_t effect) {
 
     // play the effect!
     drv.go();
+    delay(30);
 }
 
 uint8_t getPercentileWaveform(float angle) {
     uint8_t waveFormId = 0;
     float absAngle = abs(angle);
-    if (absAngle/360 <= 0.20){
+    if (absAngle/180 <= 0.20){
         waveFormId = 123;
-    } else if (absAngle/360 <= 0.40) {
+    } else if (absAngle/180 <= 0.40) {
         waveFormId = 122;  
-    } else if (absAngle/360 <= 0.60) {
+    } else if (absAngle/180 <= 0.60) {
         waveFormId = 121;  
-    } else if (absAngle/360 <= 0.80) {
+    } else if (absAngle/180 <= 0.80) {
         waveFormId = 120;  
     } else {
         waveFormId = 119;

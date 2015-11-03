@@ -13,6 +13,7 @@
 #define SerialDebug true
 #define HAPTIC_ACTIVE 0
 #define HAPTIC_UPDATE_RATE 200
+#define MUX_ACTIVE 0
 
 Adafruit_DRV2605 drv;
 struct MotorGrid {
@@ -34,7 +35,7 @@ uint32_t delt_t = 0, delt_t_haptic = 0;
 
 void setup() {
     // Setup for Master mode, pins 18/19, external pullups, 400kHz
-    delay(5000);
+    delay(1000);
     Serial.begin(9600);
     Serial.println("Serial Started");
     Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, I2C_RATE_400);
@@ -51,13 +52,15 @@ void setup() {
     
     
     //Add test for I2C MUX access
-    Wire.beginTransmission(TCA9548A_ADDRESS);
-    uint8_t error = Wire.endTransmission();
-    if (error != 0){
-        Serial.println("Can't Access I2C MUX. Check hookups");
-        while(1);
-    } else {
-        Serial.println("Connected to I2C MUX");
+    if (MUX_ACTIVE) {
+        Wire.beginTransmission(TCA9548A_ADDRESS);
+        uint8_t error = Wire.endTransmission();
+        if (error != 0){
+            Serial.println("Can't Access I2C MUX. Check hookups");
+            while(1);
+        } else {
+            Serial.println("Connected to I2C MUX");
+        }
     }
    
     //loop through each haptic channel and initialize
@@ -72,9 +75,10 @@ void setup() {
             drv.setMode(DRV2605_MODE_INTTRIG);  
         }
     }
-  
-    selectI2CChannels(MPU_CHANNEL);  
-   
+
+    if (MUX_ACTIVE) {
+      selectI2CChannels(MPU_CHANNEL);  
+    }
     if (testMPUConnection()) { // WHO_AM_I should always be 0x68
 
       Serial.println("MPU9250 is online...");
@@ -110,8 +114,10 @@ void setup() {
     }
 }
 
-void loop() {  
-    selectI2CChannels(MPU_CHANNEL);
+void loop() { 
+    if (MUX_ACTIVE) { 
+        selectI2CChannels(MPU_CHANNEL);
+    }
     // If intPin goes high, all data registers have new data
     if (checkMPUInterrupt() & 0x01) {  // On interrupt, check if data ready interrupt
         getAccelData();

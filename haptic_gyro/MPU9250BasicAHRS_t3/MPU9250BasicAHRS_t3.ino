@@ -8,12 +8,12 @@
 
 //Address for I2C Mux
 #define TCA9548A_ADDRESS 0x70
-#define MPU_CHANNEL 6
+#define MPU_CHANNEL 7
 
 #define SerialDebug true
-#define HAPTIC_ACTIVE 0
+#define HAPTIC_ACTIVE 1
 #define HAPTIC_UPDATE_RATE 200
-#define MUX_ACTIVE 0
+#define MUX_ACTIVE 1
 
 Adafruit_DRV2605 drv;
 struct MotorGrid {
@@ -138,7 +138,7 @@ void loop() {
     r = getRoll();
 
     delt_t_haptic = millis() - count_haptic;
-    if (HAPTIC_ACTIVE & (delt_t_haptic > HAPTIC_UPDATE_RATE)) {
+    if (HAPTIC_ACTIVE && (delt_t_haptic > HAPTIC_UPDATE_RATE)) {
         translateYPR2Waveforms(y, p, r);
         adjustMotors();
         count_haptic = millis();
@@ -189,9 +189,9 @@ Function to access the correct haptic motor on the wire, and set it's waveform
 * up motor = channel 2
 * down motor = channel 3
 * front motor = channel 4
-* back motor = channel 7
+* back motor = channel 5
 *
-* FYI MPU is on channel 6
+* FYI MPU is on channel 7
 */
 void adjustMotors() {
     if (motorGrid.leftMotor != 0.0) {
@@ -215,7 +215,7 @@ void adjustMotors() {
         playWaveform(motorGrid.frontMotor);
     }
     if (motorGrid.backMotor != 0.0) {
-        selectI2CChannels(7);
+        selectI2CChannels(5);
         playWaveform(motorGrid.backMotor);
     }
 }

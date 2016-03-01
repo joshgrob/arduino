@@ -144,7 +144,10 @@ void setup()
     // "1" from the keboard is ASCII "1" which gives integer value 49
     // "0" from the keboard is ASCII "0" which gives integer value 48
     Serial.println("Send '1' for Warm Start, '0' for no Warm Start");
-    serial_input = Serial.read();
+    //serial_input = Serial.read();
+    
+    //for now hard code to warm start since it is calibrated in Woodinville
+    serial_input = 49;
     while(!(serial_input == 49) && !(serial_input == 48))
     {
       serial_input = Serial.read();
